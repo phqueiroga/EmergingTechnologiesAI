@@ -61,18 +61,18 @@ function resultsTable() {
   const header = ["Strategy", "Model", "MAE(frac)", "R2", "Recall", "Lead(min)", "Energy(kWh)", "Size(KB)"];
   const widths = [1400, 2200, 1100, 900, 900, 1100, 1500, 1100];
   const rows = [
-    ["reference", "Ridge", "0.633", "-5.51", "0.41", "20.7", "7.0e-9", "0.6"],
-    ["reference", "HistGB", "0.283", "-0.59", "0.40", "23.0", "1.1e-6", "358.4"],
-    ["reference", "RandomForest", "0.280", "-0.60", "0.41", "23.0", "4.8e-6", "37656.8"],
-    ["reference", "MLP", "0.540", "-4.20", "0.29", "30.1", "1.5e-6", "96.0"],
-    ["half-rate", "Ridge", "0.323", "-1.08", "0.26", "18.7", "5.3e-9", "0.6"],
-    ["half-rate", "HistGB", "0.230", "-0.05", "0.30", "20.4", "1.1e-6", "358.2"],
-    ["half-rate", "RandomForest", "0.223", "-0.02", "0.32", "20.4", "5.1e-6", "37656.8"],
-    ["half-rate", "MLP", "0.266", "-0.41", "0.32", "28.9", "1.5e-6", "95.9"],
-    ["top-10-feat.", "Ridge", "0.543", "-3.43", "0.39", "20.6", "4.7e-9", "0.5"],
-    ["top-10-feat.", "HistGB", "0.305", "-0.79", "0.43", "23.0", "7.7e-7", "329.1"],
-    ["top-10-feat.", "RandomForest", "0.305", "-0.81", "0.43", "23.0", "2.8e-6", "37656.8"],
-    ["top-10-feat.", "MLP", "0.322", "-0.88", "0.30", "17.6", "1.7e-6", "75.3"],
+    ["reference", "Ridge", "0.633", "-5.51", "0.41", "20.7", "6.01e-08", "0.6"],
+    ["reference", "HistGB", "0.283", "-0.59", "0.40", "23.0", "1.60e-06", "358.4"],
+    ["reference", "RandomForest", "0.280", "-0.60", "0.41", "23.0", "7.88e-06", "37656.8"],
+    ["reference", "MLP", "0.540", "-4.20", "0.29", "30.1", "8.89e-07", "96.0"],
+    ["half-rate", "Ridge", "0.323", "-1.08", "0.26", "18.7", "9.46e-10", "0.6"],
+    ["half-rate", "HistGB", "0.230", "-0.05", "0.30", "20.4", "1.23e-06", "358.2"],
+    ["half-rate", "RandomForest", "0.223", "-0.02", "0.32", "20.4", "7.79e-06", "37656.8"],
+    ["half-rate", "MLP", "0.266", "-0.41", "0.32", "28.9", "9.24e-07", "95.9"],
+    ["top-10-feat.", "Ridge", "0.543", "-3.43", "0.39", "20.6", "1.80e-09", "0.5"],
+    ["top-10-feat.", "HistGB", "0.305", "-0.79", "0.43", "23.0", "1.15e-06", "329.1"],
+    ["top-10-feat.", "RandomForest", "0.305", "-0.81", "0.43", "23.0", "3.84e-06", "37656.8"],
+    ["top-10-feat.", "MLP", "0.322", "-0.88", "0.30", "17.6", "1.08e-06", "75.3"],
   ];
   return new Table({
     width: { size: 10200, type: WidthType.DXA },
@@ -170,7 +170,7 @@ const doc = new Document({
       p("Mean Absolute Error treats every prediction error identically regardless of how close the bearing is to failure, but in predictive maintenance a large error early in a bearing's life is inconsequential while the same error close to failure can mean a missed warning. This asymmetry is not a new observation for this dataset specifically: the original IEEE PHM 2012 Challenge scoring function penalised late (over-optimistic) predictions more heavily than early ones for exactly this reason. Two additional, maintenance-relevant metrics were therefore added:"),
       bullet("Critical recall: of the test observations truly within the last 20% of remaining life, the fraction the model correctly flagged (predicted rul_frac <= 0.20)."),
       bullet("Lead time (minutes): for each test bearing, the real time-to-failure remaining at the first point, in chronological order, where the model raises a correct critical alarm - i.e. how much real warning the model would have given in practice."),
-      p("Sustainability cost was measured per run as wall-clock training/inference time, energy (estimated as constant-power draw x elapsed time, using an assumed 15 W CPU-share proxy since hardware-level energy measurement (e.g. CodeCarbon on real hardware) was not available in the execution sandbox used for this project - this is a stated limitation, see Section 6), resulting CO2e (using a global-average grid intensity of 429 gCO2/kWh), and serialized model size in KB."),
+      p("Sustainability cost was measured per run as wall-clock training/inference time, energy and CO2e (using CodeCarbon's OfflineEmissionsTracker, locked to Ireland's grid carbon intensity), and serialized model size in KB. CodeCarbon is a peer-reviewed, widely used Green AI measurement tool, but a residual limitation should be noted: the execution sandbox used for this project does not expose Intel RAPL hardware power counters, so CodeCarbon itself falls back to a CPU-load/TDP-based estimation model rather than a true hardware wall-power reading - see Section 6. The relative comparison between models and strategies (driven primarily by measured wall-clock time, which is exact) remains meaningful; absolute kWh/CO2e figures should be read as standardised estimates rather than directly measured hardware values."),
 
       new Paragraph({ children: [new PageBreak()] }),
 
@@ -201,7 +201,7 @@ const doc = new Document({
       h1("6. Conclusion"),
       p("This project set out to compare Green AI strategies for vibration-based RUL prediction on the FEMTO/PRONOSTIA dataset, and the process of getting to a trustworthy comparison turned out to be as informative as the comparison itself. Two ingestion/methodology errors - including non-vibration files in feature extraction, and using an absolute RUL target across bearings with very different total lifespans - initially produced results that looked interpretable (consistent negative R2, plausible-looking MAE) but were not measuring what they appeared to measure. Systematic validation (a same-bearing sanity check, a within-condition generalisation test, and cross-checking against the literature's own choice to avoid absolute RUL regression) was necessary before any Green AI comparison could be considered valid."),
       p("With a corrected pipeline, the evidence supports a scoped but real conclusion: reducing the feature set to the 10 most important features is a genuinely low-cost, low-risk Green AI strategy for this task, reducing energy without sacrificing - and in several cases improving - failure-detection recall, while reducing sampling rate is a weaker and more condition-dependent lever. Predictive-maintenance viability itself, however, is strongly condition-dependent in this dataset, and any deployment claim should be scoped to the operating regime it was validated on rather than presented as universal."),
-      p("Future work should: measure energy directly on target hardware (e.g. CodeCarbon/RAPL) rather than via the time-based proxy used here; evaluate on the official PHM 2012 held-out Test_set bearings rather than only Learning_set siblings; model operating condition explicitly (e.g. condition-specific models or condition as an input feature) instead of assuming a single global model; and, following Juodelyte et al. (2022), evaluate whether reframing the task as degradation-stage classification rather than continuous RUL regression further improves cross-bearing generalisation, which the within-condition diagnostics in this report suggest is the dataset's main limiting factor."),
+      p("Future work should: measure energy on hardware that exposes RAPL/NVML counters so CodeCarbon can report true wall-power readings rather than its CPU-load/TDP fallback, as used here; evaluate on the official PHM 2012 held-out Test_set bearings rather than only Learning_set siblings; model operating condition explicitly (e.g. condition-specific models or condition as an input feature) instead of assuming a single global model; and, following Juodelyte et al. (2022), evaluate whether reframing the task as degradation-stage classification rather than continuous RUL regression further improves cross-bearing generalisation, which the within-condition diagnostics in this report suggest is the dataset's main limiting factor."),
 
       new Paragraph({ children: [new PageBreak()] }),
 
