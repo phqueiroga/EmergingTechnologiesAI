@@ -126,16 +126,19 @@ def get_model(name):
 
 
 MODEL_NAMES = ["Ridge", "HistGradientBoosting", "RandomForest", "MLP"]
-ESTIMATED_WATTS = 15.0
-GRID_CARBON_INTENSITY_G_PER_KWH = 429.0
+
+from codecarbon import OfflineEmissionsTracker
 
 
 def measure(fn):
+    tracker = OfflineEmissionsTracker(log_level="error", save_to_file=False, country_iso_code="IRL")
+    tracker.start()
     t0 = time.time()
     result = fn()
     elapsed = time.time() - t0
-    energy_kwh = (ESTIMATED_WATTS * elapsed / 3600) / 1000
-    co2_g = energy_kwh * GRID_CARBON_INTENSITY_G_PER_KWH
+    tracker.stop()
+    energy_kwh = tracker.final_emissions_data.energy_consumed
+    co2_g = tracker.final_emissions_data.emissions * 1000
     return result, elapsed, energy_kwh, co2_g
 
 
